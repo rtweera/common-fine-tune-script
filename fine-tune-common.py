@@ -27,7 +27,7 @@ class FineTuneQwenCommon:
         "7b": "unsloth/Qwen2.5-7B-Instruct-unsloth-bnb-4bit", # unsloth-bnb-4bit are selectively quantized for more accuracy
     } # More models at https://huggingface.co/unsloth
 
-    def __init__(self, config_path="config.yaml"):
+    def __init__(self, config_path="tuning-config.yaml"):
         self.logger = Logger()
         self.logger.info("Initializing FineTuneQwenCommon...")
 

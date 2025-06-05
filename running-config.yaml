@@ -1,0 +1,25 @@
+model_id: "rtweera/2025-Jun-05_14-44-03_Qwen2.5-0.5B-Instruct-unsloth-bnb-4bit_LoRA"
+max_seq_length: 2048  # This is the maximum sequence length for the model.
+dtype: null
+load_in_4bit: true
+
+dataset_id: "rtweera/fmt-q-and-a-together-part-13-114qty"
+user_column: "question"
+assistant_column: "answer"
+system_column: null
+use_system_prompt: True
+
+system_prompt: |
+  You are a helpful assistant made to answer questions about the Choreo documentation. 
+  You will be given a question by the user and answer it based on your knowledge of the Choreo documentation. 
+  If you do not know the answer, say 'I don't know'. DO NOT make up answers.
+  Make the answer easy to understand and actionable.
+
+sample_question: How do I create a service in Choreo?
+
+max_new_tokens: 2048  # This is the maximum number of new tokens to generate in the response.
+use_cache: True
+temperature: 1.5
+min_p: 0.1
+
+output_file: output.csv

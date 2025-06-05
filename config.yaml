@@ -1,0 +1,45 @@
+model_key: "0.5b"
+max_seq_length: 2048
+dtype: null
+load_in_4bit: true
+rank: 16
+
+dataset_id: "rtweera/fmt-q-and-a-together-part-13-114qty"
+dataset_columns: ["question", "answer", "topic"]
+user_column: "question"
+assistant_column: "answer"
+system_column: null
+system_prompt: null
+
+run_name_prefix: null
+run_name_suffix: "LoRA"
+project_name: "choreo-doc-assistant-lora"
+
+device_batch_size: 4
+grad_accumulation: 4
+epochs: 30
+logger_log_interval_seconds: 60
+learning_rate: 0.0002
+warmup_steps: 5
+optim: "paged_adamw_8bit"
+weight_decay: 0.01
+lr_scheduler_type: "linear"
+seed: 3407
+logging_steps: 1
+logging_first_step: true
+save_steps: 20
+save_total_limit: 4
+push_to_hub: true
+packing: false
+dataset_num_proc: 4
+
+target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+lora_alpha: 16
+lora_dropout: 0
+bias: "none"
+use_gradient_checkpointing: "unsloth"
+use_rslora: false
+loftq_config: null
+
+instruction_part: "<|im_start|>user\n"
+response_part: "<|im_start|>assistant\n"

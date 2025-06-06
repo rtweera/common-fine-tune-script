@@ -3,7 +3,7 @@ max_seq_length: 2048  # This is the maximum sequence length for the model.
 dtype: null
 load_in_4bit: true
 
-dataset_id: "rtweera/fmt-q-and-a-together-part-13-114qty"
+dataset_id: "rtweera/fmt-q-and-a-together-part-14-76qty"
 user_column: "question"
 assistant_column: "answer"
 system_column: null

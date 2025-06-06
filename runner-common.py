@@ -7,6 +7,8 @@ from transformers import TextStreamer
 from datasets import load_dataset
 import csv
 from huggingface_hub import HfApi
+import json
+from tqdm import tqdm
 
 from logger import Logger 
 
@@ -105,7 +107,7 @@ class RunnerQwenCommon:
             api.create_repo(repo_id=output_dataset_name, repo_type="dataset", exist_ok=True)
             api.upload_file(
                 path_or_fileobj=self.output_file,
-                path_in_repo="data.csv",
+                path_in_repo="data.jsonl",
                 repo_id=output_dataset_name,
                 repo_type="dataset",
             )
@@ -116,25 +118,21 @@ class RunnerQwenCommon:
 
     def generate_response(self):
         """
-        Generate responses for each user prompt in the dataset and write to a CSV file.
-        The CSV will have columns: system_prompt, user_prompt, assistant_message if use_system_prompt is True,
-        otherwise only user_prompt and assistant_message.
-        Also uploads the CSV as a dataset to HuggingFace Hub with the name 'output_<model_id>'.
+        Generate responses for each user prompt in the dataset and write to a JSONL file.
+        Each line will be a JSON object with keys: system_prompt, user_prompt, assistant.
+        If use_system_prompt is False, system_prompt will be set to None.
+        Also uploads the JSONL as a dataset to HuggingFace Hub with the name 'output_<model_id>'.
         """
+        self.logger.info("Downloading dataset...")
         data = load_dataset(self.dataset_id, split='train')
         questions = data[self.user_column]
         include_system_prompt = self.use_system_prompt and self.system_prompt
-        with open(self.output_file, "w", encoding="utf-8", newline='') as f:
-            writer = csv.writer(f)
-            if include_system_prompt:
-                writer.writerow(["system_prompt", "user_prompt", "assistant_message"])
-            else:
-                writer.writerow(["user_prompt", "assistant_message"])
-            for prompt in questions:
+        self.logger.info("Generating responses for user prompts in the dataset...")
+        with open(self.output_file, "w", encoding="utf-8") as f:
+            for prompt in tqdm(questions, desc='Generating responses', unit='prompt'):
                 tokenized_msg = self._get_messages(prompt)
                 output_ids = self.model.generate(
                     input_ids=tokenized_msg,
-                    attention_mask=tokenized_msg.attention_mask,
                     max_new_tokens=self.max_new_tokens,
                     use_cache=self.use_cache,
                     temperature=self.temperature,
@@ -143,9 +141,15 @@ class RunnerQwenCommon:
                 output_text = self.tokenizer.decode(
                     output_ids[0][tokenized_msg.shape[-1]:], skip_special_tokens=True
                 )
-                if include_system_prompt:
-                    writer.writerow([self.system_prompt, prompt, output_text])
-                else:
-                    writer.writerow([prompt, output_text])
+                row = {
+                    "system_prompt": self.system_prompt if include_system_prompt else None,
+                    "user_prompt": prompt,
+                    "assistant": output_text
+                }
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
         self.logger.info(f"Responses written to {self.output_file}.")
         self.upload_to_huggingface()
+
+if __name__ == "__main__":
+    runner = RunnerQwenCommon()
+    runner.generate_response()

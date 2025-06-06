@@ -23,3 +23,4 @@ temperature: 1.5
 min_p: 0.1
 
 output_file: output.csv
+output_dir: output

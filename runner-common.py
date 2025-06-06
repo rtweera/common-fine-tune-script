@@ -9,6 +9,8 @@ import csv
 from huggingface_hub import HfApi
 import json
 from tqdm import tqdm
+import pytz
+from datetime import datetime
 
 from logger import Logger 
 
@@ -46,7 +48,9 @@ class RunnerQwenCommon:
         self.use_cache = config.get('use_cache', True)
         self.temperature = config.get('temperature', 1.5)
         self.min_p = config.get('min_p', 0.1)
-        self.output_file = config.get('output_file', 'output.csv')
+        self.output_file = config.get('output_file', 'output.jsonl')
+        self.output_dir = config.get('output_dir', 'output')
+        self.output_path = None
 
         # load model and tokenizer
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
@@ -98,23 +102,27 @@ class RunnerQwenCommon:
         """
         Uploads the generated responses to HuggingFace Hub as a dataset.
         The dataset name will be 'output_<model_id>'.
-        Only writes the file once, using the already written CSV.
         """
-        self.logger.info("Uploading output CSV to HuggingFace Hub as a dataset...")
-        output_dataset_name = f"output_{self.model_name.split('/')[-1]}"
+        self.logger.info("Uploading output jsonl to HuggingFace Hub as a dataset...")
+        model_name_without_uid = self.model_name.split('/')[-1]
+        now_utc = datetime.now(pytz.utc)
+        now_colombo = now_utc.astimezone(pytz.timezone('Asia/Colombo'))
+        time_str = now_colombo.strftime('%Y-%b-%d_%H-%M-%S')
+        repo_id = f'{time_str}_outputof_{model_name_without_uid}'
+    
         api = HfApi(token=os.getenv("HF_TOKEN"))
         try:
-            api.create_repo(repo_id=output_dataset_name, repo_type="dataset", exist_ok=True)
-            api.upload_file(
-                path_or_fileobj=self.output_file,
-                path_in_repo="data.jsonl",
-                repo_id=output_dataset_name,
+            api.create_repo(repo_id=repo_id, repo_type="dataset", exist_ok=True)
+            api.upload_folder(
+                folder_path=self.output_dir,
+                repo_id=repo_id,
                 repo_type="dataset",
+                commit_message="Upload model output dataset",
             )
         except Exception as e:
             self.logger.error(f"Failed to upload to HuggingFace Hub: {str(e)}")
             raise e
-        self.logger.info(f"Output CSV uploaded to HuggingFace Hub as dataset: {output_dataset_name}")
+        self.logger.info(f"Output CSV uploaded to HuggingFace Hub as dataset: {repo_id}")
 
     def generate_response(self):
         """
@@ -128,7 +136,10 @@ class RunnerQwenCommon:
         questions = data[self.user_column]
         include_system_prompt = self.use_system_prompt and self.system_prompt
         self.logger.info("Generating responses for user prompts in the dataset...")
-        with open(self.output_file, "w", encoding="utf-8") as f:
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        self.output_path = os.path.join(self.output_dir, self.output_file)
+        with open(self.output_path, "w", encoding="utf-8") as f:
             for prompt in tqdm(questions, desc='Generating responses', unit='prompt'):
                 tokenized_msg = self._get_messages(prompt)
                 output_ids = self.model.generate(
@@ -147,9 +158,9 @@ class RunnerQwenCommon:
                     "assistant": output_text
                 }
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
-        self.logger.info(f"Responses written to {self.output_file}.")
-        self.upload_to_huggingface()
+        self.logger.info(f"Responses written to {self.output_path}.")
 
 if __name__ == "__main__":
     runner = RunnerQwenCommon()
     runner.generate_response()
+    runner.upload_to_huggingface()

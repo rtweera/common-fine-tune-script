@@ -5,3 +5,4 @@ datasets
 huggingface_hub
 transformers
 pytz
+wandb

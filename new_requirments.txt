@@ -1,6 +1,0 @@
-unsloth
-pyyaml
-python-dotenv
-datasets
-huggingface_hub
-transformers

@@ -165,3 +165,4 @@ if __name__ == "__main__":
     runner = RunnerQwenCommon()
     runner.generate_response()
     runner.upload_to_huggingface()
+    print("All tasks completed successfully.")

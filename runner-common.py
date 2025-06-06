@@ -1,11 +1,12 @@
 import unsloth
 from unsloth import FastLanguageModel
-import torch
 import yaml
 from dotenv import load_dotenv
 import os
 from transformers import TextStreamer
 from datasets import load_dataset
+import csv
+from huggingface_hub import HfApi
 
 from logger import Logger 
 
@@ -27,7 +28,7 @@ class RunnerQwenCommon:
             raise EnvironmentError("Failed to load environment variables.")
 
         # Configurations assigned from the config file
-        self.logger.info("Loading configuration from: {}".format(config))
+        self.logger.info(f"Loading configuration from: {config}")
         self.model_name = config.get('model_id', None)
         self.max_seq_length = config.get('max_seq_length', 2048)
         self.dtype = config.get('dtype', None)
@@ -91,22 +92,60 @@ class RunnerQwenCommon:
         )
         self.logger.info("Response streaming completed.")
     
+    def upload_to_huggingface(self):
+        """
+        Uploads the generated responses to HuggingFace Hub as a dataset.
+        The dataset name will be 'output_<model_id>'.
+        Only writes the file once, using the already written CSV.
+        """
+        self.logger.info("Uploading output CSV to HuggingFace Hub as a dataset...")
+        output_dataset_name = f"output_{self.model_name.split('/')[-1]}"
+        api = HfApi(token=os.getenv("HF_TOKEN"))
+        try:
+            api.create_repo(repo_id=output_dataset_name, repo_type="dataset", exist_ok=True)
+            api.upload_file(
+                path_or_fileobj=self.output_file,
+                path_in_repo="data.csv",
+                repo_id=output_dataset_name,
+                repo_type="dataset",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to upload to HuggingFace Hub: {str(e)}")
+            raise e
+        self.logger.info(f"Output CSV uploaded to HuggingFace Hub as dataset: {output_dataset_name}")
+
     def generate_response(self):
-        user_prompts = [
-    "How to deploy a webapp?",
-    "How to resolve \"\"Module not found error\"\" during the deployment of a Python project?",
-]
+        """
+        Generate responses for each user prompt in the dataset and write to a CSV file.
+        The CSV will have columns: system_prompt, user_prompt, assistant_message if use_system_prompt is True,
+        otherwise only user_prompt and assistant_message.
+        Also uploads the CSV as a dataset to HuggingFace Hub with the name 'output_<model_id>'.
+        """
         data = load_dataset(self.dataset_id, split='train')
         questions = data[self.user_column]
-
-        with open(self.output_file, "w", encoding="utf-8") as f:
+        include_system_prompt = self.use_system_prompt and self.system_prompt
+        with open(self.output_file, "w", encoding="utf-8", newline='') as f:
+            writer = csv.writer(f)
+            if include_system_prompt:
+                writer.writerow(["system_prompt", "user_prompt", "assistant_message"])
+            else:
+                writer.writerow(["user_prompt", "assistant_message"])
             for prompt in questions:
-                inputs = self._get_messages(prompt)
+                tokenized_msg = self._get_messages(prompt)
                 output_ids = self.model.generate(
-                    **inputs,
+                    input_ids=tokenized_msg,
+                    attention_mask=tokenized_msg.attention_mask,
                     max_new_tokens=self.max_new_tokens,
                     use_cache=self.use_cache,
                     temperature=self.temperature,
                     min_p=self.min_p
                 )
-                output_text = self.tokenizer.decode(output_ids[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+                output_text = self.tokenizer.decode(
+                    output_ids[0][tokenized_msg.shape[-1]:], skip_special_tokens=True
+                )
+                if include_system_prompt:
+                    writer.writerow([self.system_prompt, prompt, output_text])
+                else:
+                    writer.writerow([prompt, output_text])
+        self.logger.info(f"Responses written to {self.output_file}.")
+        self.upload_to_huggingface()

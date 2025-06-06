@@ -51,6 +51,7 @@ class RunnerQwenCommon:
         self.output_file = config.get('output_file', 'output.jsonl')
         self.output_dir = config.get('output_dir', 'output')
         self.output_path = None
+        self.hf_user_id = config.get('hf_user_id', None)
 
         # load model and tokenizer
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
@@ -115,7 +116,7 @@ class RunnerQwenCommon:
             api.create_repo(repo_id=repo_id, repo_type="dataset", exist_ok=True)
             api.upload_folder(
                 folder_path=self.output_dir,
-                repo_id=repo_id,
+                repo_id=f"{self.hf_user_id}/{repo_id}",
                 repo_type="dataset",
                 commit_message="Upload model output dataset",
             )

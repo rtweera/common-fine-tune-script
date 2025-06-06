@@ -22,5 +22,6 @@ use_cache: True
 temperature: 1.5
 min_p: 0.1
 
+hf_user_id: "rtweera"  # Hugging Face user ID for model uploads
 output_file: output.csv
 output_dir: output

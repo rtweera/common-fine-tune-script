@@ -34,3 +34,8 @@ ragas:
 # Output
 output_metrics_file: "ragas_metrics.csv"
 output_merged_file: "merged_eval_data.csv"
+
+llm_data_file: "fmt-q-and-a-together-part-14-76qty.jsonl"
+copilot_data_file: "data.jsonl"
+base_data_file: "output.jsonl"
+fine_tuned_data_file: "output.jsonl"

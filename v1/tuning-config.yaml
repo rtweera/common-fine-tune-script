@@ -4,8 +4,8 @@ dtype: null
 load_in_4bit: true
 rank: 16
 
-dataset_id: "rtweera/fmt-q-and-a-together-part-13-114qty"
-dataset_columns: ["question", "answer", "topic"]
+dataset_id: "rtweera/simple_implicit_n_qa_results_v2"
+dataset_columns: ["question", "answer", "source"]
 user_column: "question"
 assistant_column: "answer"
 system_column: null

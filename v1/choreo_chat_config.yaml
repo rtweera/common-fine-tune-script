@@ -1,0 +1,4 @@
+hf_user_id: "rtweera"
+dataset_id: "rtweera/user_centric_results_v1"
+datafile: "user_centric_results_v1.jsonl"
+copilot_repo_id: "copilot-answers-user_centric_results_v1"

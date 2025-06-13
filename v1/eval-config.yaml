@@ -1,24 +1,24 @@
 # Configuration for evaluation pipeline
 use_llm_generated: true
-llm_generated_dataset: "rtweera/fmt-q-and-a-together-part-14-76qty"
+llm_generated_dataset: "rtweera/user_centric_results_v2"
 llm_mapper:
   question: "question"
   answer: "answer"
 
-use_copilot: false
-copilot_dataset: "<your-username>/<copilot-dataset>"
+use_copilot: true
+copilot_dataset: "rtweera/copilot-answers-user_centric_results_v2"
 copilot_mapper:
   question: "question"
-  answer: "assistant_message"
+  answer: "answer"
 
 use_base: true
-base_dataset: "rtweera/2025-Jun-08_16-24-12_outputof_Qwen2.5-7B-Instruct-unsloth-bnb-4bit"
+base_dataset: "rtweera/2025-Jun-12_22-58-03_b4_outputof_Qwen2.5-7B-Instruct-unsloth-bnb-4bit"
 base_mapper:
   question: "user_prompt"
   answer: "assistant"
 
 use_fine_tuned: true
-fine_tuned_dataset: "rtweera/2025-Jun-06_15-38-56_outputof_2025-Jun-06_15-05-53_Qwen2.5-7B-Instruct-unsloth-bnb-4bit_LoRA"
+fine_tuned_dataset: "rtweera/2025-Jun-12_22-44-16_s4_outputof_2025-Jun-12_15-31-29_Qwen2.5-7B-Instruct-unsloth-bnb-4bit_LoRA"
 fine_tuned_mapper:
   question: "user_prompt"
   answer: "assistant"
@@ -35,7 +35,7 @@ ragas:
 output_metrics_file: "ragas_metrics.csv"
 output_merged_file: "merged_eval_data.csv"
 
-llm_data_file: "fmt-q-and-a-together-part-14-76qty.jsonl"
-copilot_data_file: "data.jsonl"
+llm_data_file: "user_centric_results_v2.jsonl"
+copilot_data_file: "copilot_answers.jsonl"
 base_data_file: "output.jsonl"
 fine_tuned_data_file: "output.jsonl"
